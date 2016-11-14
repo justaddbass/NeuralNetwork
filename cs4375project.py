@@ -2,17 +2,20 @@ import numpy as np
 import sys
 import tensorflow as tf
 
-learning_rate = 1
-training_epochs = 4
+learning_rate = .01
+training_epochs = 135
 batch_size = 1
-display_step = 1
+display_step = 5
 
-n_input = 2
-n_classes = 2
-n_samples = 4
+n_input = 4
+n_classes = 3
+n_samples = 135
+n_test_samples = 15
 
 x = tf.placeholder(tf.float32, shape=[batch_size,n_input], name="n_input")
 y = tf.placeholder(tf.float32, shape=[batch_size,n_classes], name="n_class")
+test_x = tf.placeholder(tf.float32, shape=[n_test_samples,n_input], name="test_input")
+test_y = tf.placeholder(tf.float32, shape=[n_test_samples,n_classes], name="test_class")
 
 def multilayer_perceptron(x, weights, biases):
     # Hidden layer with RELU activation
@@ -49,9 +52,6 @@ def train(layer1, layer2):
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-    #cost = tf.reduce_sum((y - pred)**2/n_samples)
-    #optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
-
     # Initializing the variables
     init = tf.initialize_all_variables()
 
@@ -67,7 +67,6 @@ def train(layer1, layer2):
             # Loop over all batches
             for i in range(total_batch):
                 batch_x, batch_y = next_batch(records, classes, batch_size)
-                #batch_y = batch_y.reshape([1,])
                 # Run optimization op (backprop) and cost op (to get loss value)
                 _, c = sess.run([optimizer, cost], feed_dict={x: batch_x,
                                                               y: batch_y})
@@ -82,40 +81,42 @@ def train(layer1, layer2):
         correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         # Calculate accuracy
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-        #test_accuracy = accuracy.eval({x: mnist.test.images, y: mnist.test.labels})
-        #print("Accuracy:", test_accuracy)
-        #return accuracy
+        test_data, test_classes = read_data(sys.argv[2])
+        test_accuracy = accuracy.eval({x: test_data,
+                                       y: test_classes})
+        print("Accuracy:", test_accuracy)
+        return accuracy
 
 def read_data(filename):
     data = open(filename, 'r')
     data = data.readlines()
-    key = ['']*n_samples
+    keys = ['']*len(data)
     for i, line in enumerate(data):
         data[i] = data[i].strip('\n')
-        data[i] = data[i].split(' ')
+        data[i] = data[i].split(',')
+        keys[i] = data[i][-1]
         del data[i][-1]
         for j, _ in enumerate(data[i]):
-            data[i][j] = int(data[i][j])
-    val = np.array(data)
-    key = val[:,-1].tolist()
-    print(val[:-1].tolist())
-    for i, line in enumerate(key):
-        if line == 0:
-            key[i] = [0,1]
-        else:
-            key[i] = [1,0]
-    key = np.array(key)
-    print(key)
-    #print(val)
-    val = np.delete(val, len(val[0])-1, 1)
-    return (val, key)
+            data[i][j] = float(data[i][j])
+    classes = set(keys)
+    out = [0]*len(classes)
+    out[0] = 1
+    out = np.array(out)
+    class_dict = dict()
+    for i, line in enumerate(classes):
+        class_dict[line] = np.roll(out, i).tolist()
+    for i, line in enumerate(keys):
+        keys[i] = class_dict[line]
+    keys = np.array(keys)
+    data = np.array(data)
+    return (data, keys)
 
 def next_batch(data, data2, batch_size):
-    batch = data[next_batch.counter % n_samples:(next_batch.counter+batch_size) % n_samples:1, ]
+    batch = data[next_batch.counter:next_batch.counter+batch_size:1, ]
     batch2 = data2[next_batch.counter:next_batch.counter+batch_size:1, ]
-    #batch2 = np.reshape(batch2, [n_classes,])
     next_batch.counter += batch_size
     return (batch, batch2)
 next_batch.counter = 0
 
-train(1,1)
+train(8,8)
+#read_data("bezdekiris.data")
