@@ -5,17 +5,15 @@ import tensorflow as tf
 learning_rate = .01
 training_epochs = 135
 batch_size = 1
-display_step = 5
+display_step = 10
 
 n_input = 4
 n_classes = 3
 n_samples = 135
 n_test_samples = 15
 
-x = tf.placeholder(tf.float32, shape=[batch_size,n_input], name="n_input")
-y = tf.placeholder(tf.float32, shape=[batch_size,n_classes], name="n_class")
-test_x = tf.placeholder(tf.float32, shape=[n_test_samples,n_input], name="test_input")
-test_y = tf.placeholder(tf.float32, shape=[n_test_samples,n_classes], name="test_class")
+x = tf.placeholder(tf.float32, shape=[None,n_input], name="n_input")
+y = tf.placeholder(tf.float32, shape=[None,n_classes], name="n_class")
 
 def multilayer_perceptron(x, weights, biases):
     # Hidden layer with RELU activation
@@ -78,10 +76,13 @@ def train(layer1, layer2):
         print("Optimization Finished!")
 
         # Test model
+        prediction = tf.argmax(pred, 1)
         correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+
         # Calculate accuracy
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
         test_data, test_classes = read_data(sys.argv[2])
+        print(prediction.eval(feed_dict={x: test_data}))
         test_accuracy = accuracy.eval({x: test_data,
                                        y: test_classes})
         print("Accuracy:", test_accuracy)
@@ -109,6 +110,8 @@ def read_data(filename):
         keys[i] = class_dict[line]
     keys = np.array(keys)
     data = np.array(data)
+    #print(keys)
+    print(class_dict)
     return (data, keys)
 
 def next_batch(data, data2, batch_size):
@@ -118,5 +121,5 @@ def next_batch(data, data2, batch_size):
     return (batch, batch2)
 next_batch.counter = 0
 
-train(8,8)
-#read_data("bezdekiris.data")
+if __name__ == "__main__":
+    train(8,8)
