@@ -122,4 +122,5 @@ def next_batch(data, data2, batch_size):
 next_batch.counter = 0
 
 if __name__ == "__main__":
-    train(8,8)
+    #train(8,8)
+    read_data("bezdekiris.data")
