@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import tensorflow as tf
+from collections import OrderedDict
 
 learning_rate = .01
 training_epochs = 135
@@ -20,10 +21,10 @@ def multilayer_perceptron(x, weights, biases):
     layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
     layer_1 = tf.nn.relu(layer_1)
     # Hidden layer with RELU activation
-    layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
-    layer_2 = tf.nn.relu(layer_2)
+    #layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+    #layer_2 = tf.nn.relu(layer_2)
     # Output layer with linear activation
-    out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+    out_layer = tf.matmul(layer_1, weights['out']) + biases['out']
     return out_layer
 
 def train(layer1, layer2):
@@ -100,6 +101,14 @@ def read_data(filename):
         for j, _ in enumerate(data[i]):
             data[i][j] = float(data[i][j])
     classes = set(keys)
+    class_dict = OrderedDict()
+    for i, j in enumerate(classes):
+        class_dict[j] = i
+    for i, j in enumerate(keys):
+        keys[i] = class_dict[j]
+    return (np.array(data), np.array(keys))
+'''
+    classes = set(keys)
     out = [0]*len(classes)
     out[0] = 1
     out = np.array(out)
@@ -112,7 +121,8 @@ def read_data(filename):
     data = np.array(data)
     #print(keys)
     print(class_dict)
-    return (data, keys)
+    #return (data, keys)
+'''
 
 def next_batch(data, data2, batch_size):
     batch = data[next_batch.counter:next_batch.counter+batch_size:1, ]
