@@ -3,7 +3,6 @@ import tensorflow as tf
 import numpy as np
 from numpy import genfromtxt
 
-# Build Example Data is CSV format, but use Iris data
 from sklearn import datasets
 from sklearn.cross_validation import train_test_split
 import sklearn
@@ -31,13 +30,13 @@ def convertOneHot(data):
     return (y, onehot)
 
 weights = {
-    'h1': tf.Variable(tf.random_normal([205, 128])),
-    'h2': tf.Variable(tf.random_normal([128, 128])),
-    'out': tf.Variable(tf.random_normal([128, 2]))
+    'h1': tf.Variable(tf.random_normal([205, 256])),
+    'h2': tf.Variable(tf.random_normal([256, 256])),
+    'out': tf.Variable(tf.random_normal([256, 2]))
 }
 biases = {
-    'b1': tf.Variable(tf.random_normal([128])),
-    'b2': tf.Variable(tf.random_normal([128])),
+    'b1': tf.Variable(tf.random_normal([256])),
+    'b2': tf.Variable(tf.random_normal([256])),
     'out': tf.Variable(tf.random_normal([2]))
 }
 
@@ -59,29 +58,18 @@ def next_batch(data, data2, batch_size):
     return (batch, batch2)
 next_batch.counter = 0
 
-learning_rate = .01
-training_epochs = 9000
+learning_rate = .001
 batch_size = 1
 display_step = 1
 
-n_input = 206
-n_classes = 2
-n_samples = 9000
-n_test_samples = 4000
-
-x_train, target = read_data("train.nmv.txt")
+x_train, y_train = read_data("train.nmv.txt")
 test_data, _ = read_data("prelim-nmv-noclass.txt")
-#x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
+x_train, x_validate, y_train, y_validate = train_test_split(x_train, y_train, test_size=0.33, random_state=42)
 
-#data = genfromtxt('cs-training.csv',delimiter=',')  # Training data
-#test_data = genfromtxt('cs-testing.csv',delimiter=',')  # Test data
+training_epochs = len(x_train)
 
-#x_train=np.array([ i[:-1:] for i in x_train])
-y_train,y_train_onehot = convertOneHot(target)
-#print(x_train)
-#print(y_train_onehot)
-#x_test=np.array([ i[:-1:] for i in x_test])
-#y_test,y_test_onehot = convertOneHot(y_test)
+y_train,y_train_onehot = convertOneHot(y_train)
+y_validate,y_validate_onehot = convertOneHot(y_validate)
 
 x = tf.placeholder(tf.float32, shape=[None,205], name="n_input")
 y = tf.placeholder(tf.float32, shape=[None, 2], name="n_class")
@@ -113,6 +101,13 @@ with tf.Session() as sess:
         if epoch % display_step == 0:
             print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost))
     print("Optimization Finished!")
+
+    correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+    # Calculate accuracy
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    print("Training Accuracy: ", accuracy.eval(feed_dict={x: x_train, y: y_train_onehot}))
+    print("Test Accuracy: ", accuracy.eval(feed_dict={x: x_validate, y: y_validate_onehot}))
+
     prediction = tf.argmax(pred, 1)
     out = prediction.eval(feed_dict={x: test_data})
     output = open("output.txt", 'w')
