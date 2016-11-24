@@ -15,39 +15,19 @@ def read_data(filename):
     for i, line in enumerate(data):
         data[i] = data[i].strip('\n')
         data[i] = data[i].split(' ')
-        keys[i] = data[i][-1]
+        del data[i][-1]
+        if data[i][-1] != '?':
+            keys[i] = int(data[i][-1])
         del data[i][-1]
         for j, _ in enumerate(data[i]):
             data[i][j] = float(data[i][j])
-    classes = set(keys)
-    class_dict = dict()
-    for i, j in enumerate(classes):
-        class_dict[j] = i
-    for i, j in enumerate(keys):
-        keys[i] = class_dict[j]
     return (np.array(data), np.array(keys))
-
-def buildData():
-    data, target = read_data("train.nmv.txt")
-    X_train, X_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
-    print(X_train)
-    print(X_test)
-    f=open('cs-training.csv','w')
-    for i,j in enumerate(X_train):
-        k=np.append(np.array(y_train[i]),j   )
-        f.write(",".join([str(s) for s in k]) + '\n')
-    f.close()
-    f=open('cs-testing.csv','w')
-    for i,j in enumerate(X_test):
-        k=np.append(np.array(y_test[i]),j   )
-        f.write(",".join([str(s) for s in k]) + '\n')
-    f.close()
 
 # Convert to one hot
 def convertOneHot(data):
     y = np.array(data)
-    onehot = np.zeros((len(data), 2), dtype=np.bool)
-    onehot[np.arange(len(data)), y] = 1
+    onehot = np.zeros((len(y), 2))
+    onehot[np.arange(len(y)), y] = 1
     return (y, onehot)
 
 weights = {
@@ -80,34 +60,31 @@ def next_batch(data, data2, batch_size):
 next_batch.counter = 0
 
 learning_rate = .01
-training_epochs = 135
+training_epochs = 9000
 batch_size = 1
 display_step = 1
 
-n_input = 4
-n_classes = 3
-n_samples = 135
-n_test_samples = 15
+n_input = 206
+n_classes = 2
+n_samples = 9000
+n_test_samples = 4000
 
-data, target = read_data("train.nmv.txt")
-x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
-
-
+x_train, target = read_data("train.nmv.txt")
+test_data, _ = read_data("prelim-nmv-noclass.txt")
+#x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
 
 #data = genfromtxt('cs-training.csv',delimiter=',')  # Training data
 #test_data = genfromtxt('cs-testing.csv',delimiter=',')  # Test data
 
-x_train=np.array([ i[:-1:] for i in x_train])
-y_train,y_train_onehot = convertOneHot(y_train)
-print(x_train)
-print(y_train_onehot)
-x_test=np.array([ i[:-1:] for i in x_test])
-y_test,y_test_onehot = convertOneHot(y_test)
+#x_train=np.array([ i[:-1:] for i in x_train])
+y_train,y_train_onehot = convertOneHot(target)
+#print(x_train)
+#print(y_train_onehot)
+#x_test=np.array([ i[:-1:] for i in x_test])
+#y_test,y_test_onehot = convertOneHot(y_test)
 
 x = tf.placeholder(tf.float32, shape=[None,205], name="n_input")
 y = tf.placeholder(tf.float32, shape=[None, 2], name="n_class")
-
-
 
 pred = multilayer_perceptron(x, weights, biases)
 
@@ -136,27 +113,9 @@ with tf.Session() as sess:
         if epoch % display_step == 0:
             print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost))
     print("Optimization Finished!")
-    
-'''
-    # Test model
     prediction = tf.argmax(pred, 1)
-    correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-
-    # Calculate accuracy
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-    #test_data, test_classes = read_data(sys.argv[2])
-    print(prediction.eval(feed_dict={x: x_test}))
-    test_accuracy = accuracy.eval({x: x_test,
-                                   y: y_train_onehot})
-    print("Accuracy:", test_accuracy)
-'''
-'''
-print("...")
-# Run the training
-for i in range(30):
-    sess.run(tf_train_step, feed_dict={tf_in: x_train, tf_softmax_correct: y_train_onehot})
-
-# Print accuracy
-    result = sess.run(tf_accuracy, feed_dict={tf_in: x_test, tf_softmax_correct: y_test_onehot})
-    print("Run ", i, " ", result)
-'''
+    out = prediction.eval(feed_dict={x: test_data})
+    output = open("output.txt", 'w')
+    for i in out:
+        output.write(repr(i) + '\n')
+    output.close()
